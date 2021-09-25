@@ -1,0 +1,61 @@
+#include <NTPClient.h>
+#include <ESP8266WiFi.h>  
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h>
+#include <WiFiUdp.h> //handles sending and receiving of UDP packages
+
+#define LATCH D4
+#define CLK D3
+#define DATA D2
+byte digit[11] = {0xFC, 0x50  , 0xBA, 0xDA, 0x56, 0xCE, 0xEE, 0x58, 0xFE, 0xDE};//2,3 Dan 3" Inch
+WiFiUDP ntpUDP;
+
+/*
+ * for Indonesia 7
+ * 7X60X60 = 25200
+ */
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 25200,60000);
+
+void setup() {
+  Serial.begin(115200);
+  WiFiManager wifiManager;
+  wifiManager.autoConnect("AutoConnectAP");
+  Serial.println("connected... :)");
+  timeClient.begin();
+  pinMode(LATCH, OUTPUT);
+  pinMode(CLK, OUTPUT);
+  pinMode(DATA, OUTPUT);
+  
+}
+
+void loop() {
+  timeClient.update();  // time update from NTP server
+  int hh = timeClient.getHours();
+  int mm = timeClient.getMinutes();
+  int ss = timeClient.getSeconds();
+    char  BuffH1[20];
+    char  BuffH2[20];
+    char  BuffM1[20];
+    char  BuffM2[20];
+    char  BuffD1[20];
+    char  BuffD2[20];
+    int s1,s2,m1,m2,h1,h2;
+    
+     s1 = ss % 10/1;        
+     s2 = ss % 100/10;        
+     m1 = mm % 10/1;
+     m2 = mm % 100/10;
+     h1 = hh   % 10/1;
+     h2 = hh   % 100/10;
+     
+      digitalWrite(LATCH, LOW);
+      shiftOut(DATA, CLK, MSBFIRST, digit[s1]);  
+      shiftOut(DATA, CLK, MSBFIRST, digit[s2]); 
+      shiftOut(DATA, CLK, MSBFIRST, digit[m1]);  
+      shiftOut(DATA, CLK, MSBFIRST, digit[m2]);  
+      shiftOut(DATA, CLK, MSBFIRST, digit[h1]);  
+      shiftOut(DATA, CLK, MSBFIRST, digit[h2]);  
+      digitalWrite(LATCH, HIGH);
+
+}
